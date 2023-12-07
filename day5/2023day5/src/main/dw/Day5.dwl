@@ -4,21 +4,10 @@ import * from dw::core::Strings
 
 var sample1 = readUrl("classpath://sample1.txt", "text/plain") as String
 var puzzleInput = readUrl("classpath://puzzleInput.txt", "text/plain") as String
-var parts = sample1 splitBy "\n\n"
+var parts = puzzleInput splitBy "\n\n"
 var seeds = parts[0] substringAfter "seeds: " 
     splitBy " " 
     map $ as Number
-var part2seeds = do {
-    var pairs = seeds divideBy 2
-    var ranges = pairs map (pair) -> do {
-        var start = pair[0]
-        var length = pair[1]
-        ---
-        (start to start + length - 1) as Array
-    }
-    ---
-    flatten(ranges)
-}
 
 fun parseMap(mapText) = do {
     var lines = mapText splitBy "\n"
@@ -50,9 +39,47 @@ fun conversion(source, conversionMap) =
             length: 1
         }
         ---
-        chosenRange ++ {sourceNumber: sourceNumber,
+        chosenRange ++ {
+            sourceNumber: sourceNumber,
             mapped: sourceNumber - chosenRange.source + chosenRange.destination
         } 
     }
+
+fun reverseConversion(destination, conversionMap) =
+    destination map (destinationNumber) ->  do {
+        var matchedRange = conversionMap.ranges firstWith (range) ->
+            destinationNumber >= range.destination and
+                destinationNumber < range.destination + range.length
+        var chosenRange = matchedRange default {
+            destination: destinationNumber,
+            source: destinationNumber,
+            length: 1
+        }
+        ---
+        chosenRange ++ {
+            destinationNumber: destinationNumber,
+            mapped: destinationNumber - chosenRange.destination + chosenRange.source
+        } then ($.mapped)
+    }
+
 fun convert(source, conversionMap) =
     conversion(source, conversionMap).mapped
+
+fun part2RelevantInputs(range) =
+    range.ranges flatMap (range) ->
+            [range.source, range.source + range.length - 1]
+
+var part2RelevantSeeds = do {
+    var relevantInputs = conversionMaps[-1 to 0] reduce (conversionMap, destinations = []) ->
+        part2RelevantInputs(conversionMap) ++ reverseConversion(destinations, conversionMap)
+    var seedRanges = seeds divideBy 2 map {
+        min: $[0],
+        max: $[0] + $[1] - 1
+    }
+    ---
+    relevantInputs filter (candidate) ->
+        seedRanges some (seedRange) ->
+            candidate >= seedRange.min and candidate <= seedRange.max
+            
+    
+}
