@@ -6,6 +6,7 @@ import (
 )
 
 func main() {
+	//defer profile.Start(profile.MemProfile).Stop()
 	island := LoadGearIsland("puzzle-input.txt")
 	lastState := FindPathToFactory(island)
 	log.Printf("Stopped at %v with heat loss %d", lastState.Position, lastState.HeatLoss)
@@ -13,11 +14,11 @@ func main() {
 }
 
 type Point struct {
-	X int
-	Y int
+	X int16
+	Y int16
 }
 
-type Direction int
+type Direction int8
 
 const (
 	Undefined Direction = iota
@@ -57,7 +58,7 @@ func (p Point) Move(direction Direction) Point {
 	}
 }
 
-func (p Point) DistanceFrom(other Point) int {
+func (p Point) DistanceFrom(other Point) int16 {
 	horizontal := p.X - other.X
 	if horizontal < 0 {
 		horizontal = -1 * horizontal

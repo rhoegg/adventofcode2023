@@ -7,7 +7,7 @@ import (
 )
 
 type GearIsland struct {
-	Map     [][]int
+	Map     [][]int16
 	Factory Point
 }
 
@@ -21,13 +21,13 @@ func LoadGearIsland(filename string) GearIsland {
 		panic(err)
 	}
 
-	var mapLines [][]int
+	var mapLines [][]int16
 	for _, line := range strings.Split(string(inputdata), "\n") {
 		row := strings.Split(line, "")
-		var heats []int
+		var heats []int16
 		for _, heatText := range row {
 			i, _ := strconv.Atoi(heatText)
-			heats = append(heats, i)
+			heats = append(heats, int16(i))
 		}
 		mapLines = append(mapLines, heats)
 	}
@@ -35,19 +35,19 @@ func LoadGearIsland(filename string) GearIsland {
 	return GearIsland{
 		Map: mapLines,
 		Factory: Point{
-			X: len(mapLines[0]) - 1,
-			Y: len(mapLines) - 1,
+			X: int16(len(mapLines[0])) - 1,
+			Y: int16(len(mapLines)) - 1,
 		},
 	}
 }
 
 func (gi GearIsland) InBounds(p Point) bool {
 	return (p.X >= 0) &&
-		(p.X < len(gi.Map[0])) &&
+		(p.X < int16(len(gi.Map[0]))) &&
 		(p.Y >= 0) &&
-		(p.Y < len(gi.Map))
+		(p.Y < int16(len(gi.Map)))
 }
 
-func (gi GearIsland) MeasureHeatLoss(p Point) int {
+func (gi GearIsland) MeasureHeatLoss(p Point) int16 {
 	return gi.Map[p.Y][p.X]
 }

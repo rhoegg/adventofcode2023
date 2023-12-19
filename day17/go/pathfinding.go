@@ -9,15 +9,16 @@ import (
 type PathState struct {
 	Position      Point
 	Direction     Direction
-	Trail         []PathState
-	StraightSteps int
-	HeatLoss      int
+	Last          *PathState
+	StraightSteps int8
+	HeatLoss      int16
 	index         int
 }
 
-type Vector struct {
-	Position  Point
-	Direction Direction
+type VisitedKey struct {
+	Position      Point
+	Direction     Direction
+	StraightSteps int8
 }
 
 type PriorityQueue []*PathState
@@ -47,71 +48,71 @@ func (pq *PriorityQueue) Pop() any {
 	return state
 }
 
-func PathOrigin(p Point) PathState {
-	return PathState{Position: p}
+func (pq *PriorityQueue) Contains(p Point, d Direction) bool {
+	for _, ps := range *pq {
+		if ps.Position == p && ps.Direction == d {
+			return true
+		}
+	}
+	return false
+}
+
+func PathOrigin(p Point) *PathState {
+	return &PathState{Position: p}
 }
 
 func FindPathToFactory(island GearIsland) PathState {
 	pq := make(PriorityQueue, 0)
 	heap.Init(&pq)
 	state := PathOrigin(LavaPool())
-	visited := make(map[Vector]int)
+	visited := make(map[VisitedKey]int16)
 	i := 0
+	h := 0
 	for {
-		if state.Position == island.Factory {
-			return state
+		if state.Position == island.Factory { //|| state.HeatLoss > 210
+			return *state
 		}
-
-		if i += 1; i%10000 == 0 {
-			log.Printf("(%d) Exploring %d,%d %s (%d %d)", i, state.Position.X, state.Position.Y, state.Direction, len(state.Trail), state.HeatLoss)
-		}
-		visited[Vector{Position: state.Position, Direction: state.Direction}] = state.HeatLoss
-		var newTrail []PathState
-		for _, ps := range state.Trail {
-			newTrail = append(newTrail, ps)
-		}
-		newTrail = append(newTrail, PathState{
-			Position:      state.Position,
-			Direction:     state.Direction,
-			StraightSteps: state.StraightSteps,
-			HeatLoss:      state.HeatLoss,
-		})
 		// generate all next steps and put in pq
+		var pos Point
 		for _, dir := range []Direction{North, South, East, West} {
-			pos := state.Position.Move(dir)
+			pos = state.Position.Move(dir)
 			if island.InBounds(pos) &&
 				(!state.Direction.IsBackwards(dir)) &&
-				(state.Direction != dir || state.StraightSteps < 3) &&
-				!state.OnTrail(pos) {
+				(state.Direction != dir || state.StraightSteps < 3) {
 
-				newHeatLoss := state.HeatLoss + island.MeasureHeatLoss(pos)
-				oldHeatLoss, beenThere := visited[Vector{Position: pos, Direction: dir}]
+				nextState := PathState{
+					Position:      pos,
+					Direction:     dir,
+					Last:          state,
+					StraightSteps: 1,
+					HeatLoss:      state.HeatLoss + island.MeasureHeatLoss(pos),
+				}
+				if nextState.Direction == state.Direction {
+					nextState.StraightSteps = state.StraightSteps + 1
+				}
 
-				if !beenThere || newHeatLoss < oldHeatLoss {
-					nextState := PathState{
-						Position:      pos,
-						Direction:     dir,
-						Trail:         newTrail,
-						StraightSteps: 1,
-						HeatLoss:      newHeatLoss,
-					}
-					if nextState.Direction == state.Direction {
-						nextState.StraightSteps = state.StraightSteps + 1
+				oldHeatLoss, beenThere := visited[nextState.VisitedKey()]
+				if !beenThere || oldHeatLoss > nextState.HeatLoss {
+					visited[nextState.VisitedKey()] = nextState.HeatLoss
+					if i += 1; i%100000 == 0 {
+						log.Printf("(%d %d %d) Exploring %d,%d %s (%d)", i, h, len(visited), nextState.Position.X, nextState.Position.Y, nextState.Direction, nextState.HeatLoss)
 					}
 					heap.Push(&pq, &nextState)
+					h += 1
 				}
 			}
 		}
 		// take next state from pq
-		state = *heap.Pop(&pq).(*PathState)
-		//log.Printf("Trying path %s", PrettyState(state))
+		state = heap.Pop(&pq).(*PathState)
+		h -= 1
 	}
 }
 
 func (ps PathState) PrettyTrail() (lines []string) {
-	for _, state := range ps.Trail {
-		lines = append(lines, state.Pretty())
+	if ps.Last != nil {
+		lines = append(lines, ps.Last.PrettyTrail()...)
 	}
+	lines = append(lines, ps.Pretty())
 	return lines
 }
 
@@ -120,10 +121,19 @@ func (ps PathState) Pretty() string {
 }
 
 func (ps PathState) OnTrail(p Point) bool {
-	for _, pastState := range ps.Trail {
-		if p == pastState.Position {
-			return true
-		}
+	if ps.Last == nil {
+		return false
 	}
-	return false
+	if ps.Last.Position == p {
+		return true
+	}
+	return ps.Last.OnTrail(p)
+}
+
+func (ps PathState) VisitedKey() VisitedKey {
+	return VisitedKey{
+		Position:      ps.Position,
+		Direction:     ps.Direction,
+		StraightSteps: ps.StraightSteps,
+	}
 }
