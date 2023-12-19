@@ -4,6 +4,7 @@
 * You can try it out with the mapping on the src/test/dw directory.
 */
 %dw 2.0
+import * from dw::Runtime
 import * from dw::core::Arrays
 import * from dw::core::Strings
 
@@ -20,9 +21,11 @@ type Workflow = {
 }
 
 type WorkflowRule = {
-    condition?: (PartRating) -> Boolean,
+    condition?: PartRatingPredicate,
     target: String
 }
+
+type PartRatingPredicate = (PartRating) -> Boolean
 
 fun readData(filename) =
     readUrl("classpath://$(filename)", "text/plain")
@@ -61,17 +64,13 @@ fun parseWorkflowRule(ruleText: String): WorkflowRule = do {
     }
 }
 
-fun parseCondition(conditionText) = do {
+fun parseCondition(conditionText: String): PartRatingPredicate = do {
     var threshold = conditionText[2 to -1] as Number
     var ratingLetter = conditionText[0]
     ---
-    {
-        rating: ratingLetter,
-        operation: conditionText[1] match {
+    conditionText[1] match {
             case ">" -> (rating: PartRating) -> rating[ratingLetter] > threshold
             else -> (rating: PartRating) -> rating[ratingLetter] < threshold 
-        },
-        threshold: threshold
     }
 }
 
@@ -91,5 +90,31 @@ fun parsePartRatings(chunk: String): Array<PartRating> =
         } mapObject (($$): $ as Number)
     }
 
-fun startingWorkflow(workflows) =
-    workflows.in
+fun runWorkflow(workflow: Workflow, partRating: PartRating): String = do {
+    var matchedRule = workflow.rules firstWith (rule) ->
+        (rule.condition == null) or rule.condition(partRating)
+    ---
+    matchedRule.target default fail("no matched rule")
+}
+
+fun runWorkflows(workflows: Object, partRating: PartRating, name: String = "in"): { result: String, partRating: PartRating } = do {
+    var workflow = workflows[name] as Workflow
+    var target = runWorkflow(workflow, partRating)
+    var result = {partRating: partRating}
+    ---
+    log(target) match {
+        case "A" -> result ++ {result: target}
+        case "R" -> result ++ {result: target}
+        else -> runWorkflows(workflows, partRating, target)
+    }
+}
+
+fun part1(myInput) = do {
+    var workflowResults = myInput.partRatings map (partRating) -> 
+        runWorkflows(myInput.workflows, partRating)
+    var accepted = workflowResults filter (result) -> result.result == "A"
+    var acceptedRatingSums = accepted map (result) -> 
+        sum(result.partRating pluck (ratingValue, category) -> ratingValue)
+    ---
+    sum(acceptedRatingSums)
+}
