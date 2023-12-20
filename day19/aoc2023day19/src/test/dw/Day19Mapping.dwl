@@ -11,5 +11,11 @@ var myInput = parseInput(readData("puzzle-input.txt"))
 
 ---
 {
-    part1: part1(myInput)
+    part1: part1(myInput),
+    // part2RuleInfo: myInput.workflows mapObject (workflow) -> {
+    //         name: workflow.name,
+    //         rules: workflow.rules map (rule) ->
+    //             rule.ruleDescriptor
+    //     }
+    part2: part2(myInput)
 }
