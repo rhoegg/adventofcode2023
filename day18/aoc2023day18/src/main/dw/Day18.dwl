@@ -71,7 +71,7 @@ fun plotTrench(digPlan: Array<Instruction>): Array<DigAction> =
         )
     }
         
-fun measureArea(lagoonTrench: Array<DigAction>) = do {
+fun measureAreaLaboriouslySlow(lagoonTrench: Array<DigAction>) = do {
     var minCorner = {
         x: min(lagoonTrench map $.point.x) default 0,
         y: min(lagoonTrench map $.point.y) default 0

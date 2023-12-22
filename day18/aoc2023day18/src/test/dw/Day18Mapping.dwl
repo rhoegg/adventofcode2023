@@ -11,5 +11,6 @@ var trench = plotTrench(loadDigPlan("puzzle-input.txt"))
 {
     // digPlan: loadDigPlan("sample1.txt"),
     // trench: trench,
-    part1: sizeOf(measureAreaLaboriouslySlow(trench))
+    // part1: sizeOf(measureAreaLaboriouslySlow(trench))
+    part2Working: measureAreaEfficiently(trench)
 }
