@@ -6,11 +6,13 @@ output application/json
 
 import * from Day18
 
-var trench = plotTrench(loadDigPlan("puzzle-input.txt"))
+var plan = loadDigPlan("puzzle-input.txt")
+// var part2Plan = loadDigPlanPart2("sample1.txt")
+var trench = plotTrench(plan)
 ---
 {
     // digPlan: loadDigPlan("sample1.txt"),
     // trench: trench,
     // part1: sizeOf(measureAreaLaboriouslySlow(trench))
-    part2Working: measureAreaEfficiently(trench)
+    part2Working: measureAreaEfficiently(plan)
 }

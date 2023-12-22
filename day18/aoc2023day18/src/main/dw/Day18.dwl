@@ -1,4 +1,5 @@
 %dw 2.0
+import * from dw::core::Arrays
 import * from dw::core::Strings
 
 type Instruction = {
@@ -17,6 +18,11 @@ type DigAction = {
 type Point = {
     x: Number,
     y: Number
+}
+
+type Segment = {
+    begin: Point,
+    end: Point
 }
 
 // defining down as positive and right as positive
@@ -121,3 +127,30 @@ fun measureAreaLaboriouslySlow(lagoonTrench: Array<DigAction>) = do {
     ---
     lagoonPoints
 }
+
+fun measureAreaEfficiently(instructions: Array<Instruction>) = do {
+
+    // make line segments
+    // start at minimum y, then minimum x.
+    // reduce to next y down
+    // add up rectangles using edge detection
+    //   detect edges as above for vertical segments, 
+    //     but find relevant segments and jump to the next
+
+    var s = segments(instructions) partition (segment) ->
+        (segment.begin.y == segment.end.y)
+    var horizontalSegments = s.success
+    var verticalSegments = s.failure
+    ---
+    horizontalSegments
+}
+
+fun segments(digPlan: Array<Instruction>): Array<Segment> =
+    digPlan reduce (instruction, path=[]) -> do {
+        var last = path[-1].end default origin
+        ---
+        path << {
+            begin: last,
+            end: move(last, instruction.direction, instruction.distance)
+        }
+    }
