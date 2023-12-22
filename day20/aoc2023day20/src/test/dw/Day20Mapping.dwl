@@ -5,5 +5,11 @@
 output application/json
 
 import * from Day20
+
+var begin = initModuleStates(
+    loadModuleConfiguration("puzzle-input.txt"))
 ---
-initModuleStates(loadModuleConfiguration("sample1.txt"))
+{
+    //begin: begin,
+    part1: part1(begin)
+}
