@@ -39,19 +39,19 @@ fun gearIsland(filename: String): GearIsland = do {
     }
 }
 
-fun move(location: Point, direction) = do {
+fun move(location: Point, direction, distance=1) = do {
     direction match {
         case "east" -> location update {
-            case x at .x -> x + 1
+            case x at .x -> x + distance
         }
         case "west" -> location update {
-            case x at .x -> x - 1
+            case x at .x -> x - distance
         }
         case "north" -> location update {
-            case y at .y -> y - 1
+            case y at .y -> y - distance
         }
         case "south" -> location update {
-            case y at .y -> y + 1
+            case y at .y -> y + distance
         }
     }
 }
@@ -67,7 +67,7 @@ fun fromLavaPool(): PathState = {
 fun findLowestHeatLossPathToFactory(gearIsland: GearIsland, pathState: PathState, paths: Array<PathState> = []) =
     // are we at the end?
     if (pathState.location == gearIsland.factory) pathState
-    else if (sizeOf(pathState.trail) > 16) pathState // temporary shortening
+    // else if (sizeOf(pathState.trail) > 16) pathState // temporary shortening
     else do {
         // generate all next steps and put in paths
         var steps = ["north", "south", "east", "west"] flatMap (direction) -> do {
@@ -111,3 +111,36 @@ fun inBounds(gearIsland: GearIsland, position: Point): Boolean =
 
 fun measureHeatLoss(gearIsland: GearIsland, location: Point): Number =
     gearIsland.map[location.y][location.x] as Number
+
+
+fun findPathForUltraCrucible(gearIsland: GearIsland, pathState: PathState, paths: Array<PathState> = []) =
+    // are we at the end?
+    if (pathState.location == gearIsland.factory) pathState
+    else do {
+        // generate all next steps and put in paths
+        var steps = ["north", "south", "east", "west"] flatMap (direction) -> do {
+            // determine ultra crucible next steps
+            var position = 
+                if (direction == pathState.direction) move(pathState.location, direction)
+                else move(pathState.location, direction, 4)
+            var straightSteps = 1 + (if (direction == pathState.direction) pathState.straightSteps else 3)
+            ---
+            if (isBackwards(pathState.direction, direction)) []
+            else if (! inBounds(gearIsland, position)) []
+            else if (direction == pathState.direction and (pathState.straightSteps == 10)) []
+            else if (pathState.trail some (trailStep) -> trailStep.location == position) []
+            else {
+                location: position,
+                direction: direction,
+                trail: pathState.trail << (pathState - "trail"), // account for leap
+                straightSteps: straightSteps,
+                heatLoss: pathState.heatLoss + measureHeatLoss(gearIsland, position) // account for leap
+            }
+        }
+        // add to paths and sort (like a priority queue)
+        var sortedPaths = ((paths ++ steps) orderBy (step) -> step.heatLoss) splitAt 1
+        var nextStep = sortedPaths.l[0]
+        var newPaths = sortedPaths.r
+        ---
+        findLowestHeatLossPathToFactory(gearIsland, nextStep, newPaths)
+    }
