@@ -75,7 +75,7 @@ func FindPathToFactory(island GearIsland) PathState {
 		// generate all next steps and put in pq
 		var pos Point
 		for _, dir := range []Direction{North, South, East, West} {
-			pos = state.Position.Move(dir)
+			pos = state.Position.MoveOne(dir)
 			if island.InBounds(pos) &&
 				(!state.Direction.IsBackwards(dir)) &&
 				(state.Direction != dir || state.StraightSteps < 3) {
@@ -89,6 +89,63 @@ func FindPathToFactory(island GearIsland) PathState {
 				}
 				if nextState.Direction == state.Direction {
 					nextState.StraightSteps = state.StraightSteps + 1
+				}
+
+				oldHeatLoss, beenThere := visited[nextState.VisitedKey()]
+				if !beenThere || oldHeatLoss > nextState.HeatLoss {
+					visited[nextState.VisitedKey()] = nextState.HeatLoss
+					if i += 1; i%100000 == 0 {
+						log.Printf("(%d %d %d) Exploring %d,%d %s (%d)", i, h, len(visited), nextState.Position.X, nextState.Position.Y, nextState.Direction, nextState.HeatLoss)
+					}
+					heap.Push(&pq, &nextState)
+					h += 1
+				}
+			}
+		}
+		// take next state from pq
+		state = heap.Pop(&pq).(*PathState)
+		h -= 1
+	}
+}
+
+func FindUltraCruciblePath(island GearIsland) PathState {
+	pq := make(PriorityQueue, 0)
+	heap.Init(&pq)
+	state := PathOrigin(LavaPool())
+	visited := make(map[VisitedKey]int16)
+	i := 0
+	h := 0
+	for {
+		if state.Position == island.Factory { //|| state.HeatLoss > 210
+			return *state
+		}
+		// generate all next steps and put in pq
+		var pos Point
+		for _, dir := range []Direction{North, South, East, West} {
+			if state.Direction == dir {
+				pos = state.Position.Move(dir, 1)
+			} else {
+				pos = state.Position.Move(dir, 4)
+			}
+			if island.InBounds(pos) &&
+				(!state.Direction.IsBackwards(dir)) &&
+				(state.Direction != dir || state.StraightSteps < 10) {
+
+				nextState := PathState{
+					Position:      pos,
+					Direction:     dir,
+					Last:          state,
+					StraightSteps: 4,
+					HeatLoss:      state.HeatLoss + island.MeasureHeatLoss(pos),
+				}
+				if nextState.Direction == state.Direction {
+					nextState.StraightSteps = state.StraightSteps + 1
+				}
+				if state.Direction != dir {
+					nextState.HeatLoss +=
+						island.MeasureHeatLoss(state.Position.Move(dir, 1)) +
+							island.MeasureHeatLoss(state.Position.Move(dir, 2)) +
+							island.MeasureHeatLoss(state.Position.Move(dir, 3))
 				}
 
 				oldHeatLoss, beenThere := visited[nextState.VisitedKey()]

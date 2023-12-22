@@ -11,6 +11,10 @@ func main() {
 	lastState := FindPathToFactory(island)
 	log.Printf("Stopped at %v with heat loss %d", lastState.Position, lastState.HeatLoss)
 	log.Printf("Trail: %v", strings.Join(lastState.PrettyTrail(), "\n"))
+	log.Println("Part 2:")
+	lastState = FindUltraCruciblePath(island)
+	log.Printf("Stopped at %v with heat loss %d", lastState.Position, lastState.HeatLoss)
+	log.Printf("Trail: %v", strings.Join(lastState.PrettyTrail(), "\n"))
 }
 
 type Point struct {
@@ -43,16 +47,20 @@ func (d Direction) String() string {
 	}
 }
 
-func (p Point) Move(direction Direction) Point {
+func (p Point) MoveOne(direction Direction) Point {
+	return p.Move(direction, 1)
+}
+
+func (p Point) Move(direction Direction, distance int16) Point {
 	switch direction {
 	case North:
-		return Point{X: p.X, Y: p.Y - 1}
+		return Point{X: p.X, Y: p.Y - distance}
 	case South:
-		return Point{X: p.X, Y: p.Y + 1}
+		return Point{X: p.X, Y: p.Y + distance}
 	case East:
-		return Point{X: p.X + 1, Y: p.Y}
+		return Point{X: p.X + distance, Y: p.Y}
 	case West:
-		return Point{X: p.X - 1, Y: p.Y}
+		return Point{X: p.X - distance, Y: p.Y}
 	default:
 		return p
 	}
