@@ -1,42 +1,23 @@
 package main
 
 import (
-	"os"
-	"regexp"
+	"log"
 	"strings"
 )
 
 func main() {
-
+	moduleConfig := LoadModuleConfiguration("puzzle-input.txt")
+	log.Println(moduleConfig)
+	pulses := moduleConfig.PushButton()
+	var pulsesText []string
+	for _, p := range pulses {
+		pulsesText = append(pulsesText, p.String())
+	}
+	log.Printf("One button push: %s", strings.Join(pulsesText, "\n"))
+	part1(moduleConfig)
 }
 
-func LoadModuleConfiguration(filename string) ModuleConfiguration {
-	inputdata, err := os.ReadFile(filename)
-	if err != nil {
-		panic(err)
-	}
-	modules := make(map[string]*Module)
-	for _, line := range strings.Split(string(inputdata), "\n") {
-		segments := strings.Split(line, " -> ")
-		hasType, err := regexp.MatchString("\\w.*", segments[0])
-		if err != nil {
-			panic(err)
-		}
-		moduleType := "none"
-		name := segments[0]
-		if hasType {
-			moduleType = segments[0][0:1]
-			name = segments[0][1:]
-		}
-		m := Module{
-			Name:         name,
-			Type:         moduleType,
-			Destinations: strings.Split(segments[1], ","),
-		}
-		modules[name] = &m
-	}
-
-	return ModuleConfiguration{
-		Modules: modules,
-	}
+func part1(moduleConfig *ModuleConfiguration) {
+	pulseStats := moduleConfig.PushButtonOneThousand()
+	log.Printf("Part 1 (%d, %d): %d", pulseStats[0], pulseStats[1], pulseStats[0]*pulseStats[1])
 }
