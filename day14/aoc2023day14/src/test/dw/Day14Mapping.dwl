@@ -12,7 +12,7 @@ var part1Platform = platform("puzzle-input.txt")
     reversed: pretty(reverse(part1Platform)),
     tiltedNorth: pretty(tiltNorth(part1Platform)),
     part1: score(tiltNorth(part1Platform)),
-    part2: score(cycle(part1Platform, 1000000000))
+    // part2: score(cycle(part1Platform, 1000000000))
     // ,
     // part2p1: pretty(cycle(part1Platform, 1000000000))
 }
