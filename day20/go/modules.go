@@ -23,6 +23,8 @@ type ModuleConfiguration struct {
 	Modules      map[string]*Module
 	FlipFlops    map[string]bool
 	Conjunctions map[string]map[string]int8
+	RxLowPulses  int
+	RxHighPulses int
 }
 
 func (c ModuleConfiguration) String() string {
@@ -127,6 +129,13 @@ func (c *ModuleConfiguration) SendPulse(p Pulse) (pulses []Pulse) {
 			})
 		}
 		return pulses
+	}
+	if p.Destination == "rx" {
+		if p.Value == 0 {
+			c.RxLowPulses += 1
+		} else {
+			c.RxHighPulses += 1
+		}
 	}
 	if m, ok := c.Modules[p.Destination]; ok {
 		if m.Type == "%" {
