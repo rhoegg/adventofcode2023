@@ -1,10 +1,14 @@
-/**
-* This mapping won't be shared through your library, but you can use it to try out your module and create integration tests.
-*/
 %dw 2.0
 output application/json
 
 import * from Day21
+var garden = parseGarden("puzzle-input.txt")
 ---
-load("sample1.txt")
-// path finding, starting with go
+{
+    garden: garden,
+    oneStep: gardenStep(garden.plots, [garden.start]),
+    threeSteps: gardenWalk(garden.plots, garden.start, 3),
+    sixSteps: sizeOf(gardenWalk(garden.plots, garden.start, 6)),
+    part1: sizeOf(gardenWalk(garden.plots, garden.start, 64))
+    // part 2 extends to infinitely tiled map and many more steps!
+}
