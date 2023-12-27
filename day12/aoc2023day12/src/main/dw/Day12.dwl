@@ -72,7 +72,7 @@ fun allArrangements(conditionRecords, damagedGroups) =
         conditionRecords
     else 
         allArrangements(
-            (conditionRecords take 10000) flatMap (conditionRecord) -> do {
+            (conditionRecords) flatMap (conditionRecord) -> do {
                 if (conditionRecord contains "?")
                     [
                         (conditionRecord substringBefore "?") ++ "." ++ (conditionRecord substringAfter "?"),
@@ -92,8 +92,8 @@ fun allArrangements(conditionRecords, damagedGroups) =
                     // prune the combinations that create oversized damage groups
                     ! (candidate contains repeat("#", max(damagedGroups) as Number + 1))
                     // TODO: prune the candidates with too many groups of each size
-                    and
-                    allGroupSizeCountsAreSmaller(qualifierGroups, damagedGroups)
+                    // and
+                    // allGroupSizeCountsAreSmaller(qualifierGroups, damagedGroups)
                 }
             , damagedGroups)
 
@@ -110,7 +110,7 @@ fun part1(filename) = do {
     var arrangements = parseConditionRecords(filename) map (parsedRecord) ->
         possibleArrangements(parsedRecord.conditionRecord, parsedRecord.damagedGroups)
     ---
-    sum(arrangements map sizeOf($))
+    sum(arrangements map log(sizeOf($)))
 }
 
 fun part2(filename) = do {
