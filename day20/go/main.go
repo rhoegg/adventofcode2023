@@ -46,4 +46,5 @@ func part2bruteforce(moduleConfig *ModuleConfiguration) {
 
 func part2(moduleConfig *ModuleConfiguration) {
 	// make func count buttons to state cycle?
+	// got lucky! the LCM didn't have to mean a low pulse but it turned out that it did
 }

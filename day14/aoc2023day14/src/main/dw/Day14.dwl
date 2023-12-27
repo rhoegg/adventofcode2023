@@ -88,7 +88,11 @@ fun cycle(platform: Platform, count: Number, cache = {}): Platform = do {
     var platformCacheKey = cacheKey(platform)
     var cached = cache[platformCacheKey]
     ---
-    if (cached != null) cached
+    if (cached != null) do {
+        var forLog = log("cache hit", "")
+        ---
+        cached
+    }
     else do {
         // memoize
         var north = tiltNorth(platform)
