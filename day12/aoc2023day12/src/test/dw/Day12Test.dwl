@@ -17,6 +17,6 @@ var difficulty = do {
     }
 ---
 {
-    part1: part1("puzzle-input.txt"),
+    part1: part1("testsample.txt"),
     // part2: part2("sample1.txt")
 }

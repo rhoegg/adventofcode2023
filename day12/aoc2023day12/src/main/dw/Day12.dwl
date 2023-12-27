@@ -107,10 +107,16 @@ fun allGroupSizeCountsAreSmaller(g1, g2) = do {
 }
 
 fun part1(filename) = do {
-    var arrangements = parseConditionRecords(filename) map (parsedRecord) ->
-        possibleArrangements(parsedRecord.conditionRecord, parsedRecord.damagedGroups)
+    var arrangements = parseConditionRecords(filename) map (parsedRecord) -> {
+        record: parsedRecord.conditionRecord,
+        items: possibleArrangements(parsedRecord.conditionRecord, parsedRecord.damagedGroups)
+    }
     ---
-    sum(arrangements map log(sizeOf($)))
+    {
+        items: arrangements map $.items,
+        solution: sum(arrangements map log($.record, sizeOf($.items)))
+    }
+    
 }
 
 fun part2(filename) = do {
