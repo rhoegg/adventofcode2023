@@ -64,8 +64,18 @@ fun contents(contraption: Array<String>, location: Point): String =
     contraption[location.y][location.x]
 
 fun advanceContraptionState(contraptionState) = do {
-    var newBeams = contraptionState.beams flatMap (beam) -> do {
-        var encounteredObject = contraptionState.contraption contents beam.location
+    var newBeams = contraptionState.beams flatMap (beam) -> 
+        beamStep(contraptionState.contraption, beam)
+    ---
+    {
+        contraption: contraptionState.contraption,
+        beams: newBeams,
+        visited: contraptionState.visited ++ newBeams
+    }
+}
+
+fun beamStep(contraption, beam) = do {
+        var encounteredObject = contraption contents beam.location
         var keepGoing = {
             location: beam.location move beam.direction,
             direction: beam.direction
@@ -127,12 +137,13 @@ fun advanceContraptionState(contraptionState) = do {
             }
         }
     }
+
+fun allVisitedPoints(contraption, beam) = do {
+    var nextBeams = beamStep(contraption, beam) filter (b) ->
+        inBounds(contraption, b.location)
     ---
-    {
-        contraption: contraptionState.contraption,
-        beams: newBeams,
-        visited: contraptionState.visited ++ newBeams
-    }
+    if (isEmpty(nextBeams)) [beam]
+    else nextBeams flatMap (next) -> [beam] ++ allVisitedPoints(contraption, next)
 }
 
 fun move(pos: Point, direction: String): Point =
@@ -143,19 +154,21 @@ fun move(pos: Point, direction: String): Point =
         case "down" -> {x: pos.x, y: pos.y + 1 }
     }
 
+fun inBounds(contraption, loc) = 
+    loc.x >= 0
+    and
+    loc.y >= 0
+    and
+    loc.x < sizeOf(contraption[0])
+    and
+    loc.y < sizeOf(contraption)
+
 fun removeOutOfBounds(contraptionState) = do {
-    fun inBounds(loc) = 
-        loc.x >= 0
-        and
-        loc.y >= 0
-        and
-        loc.x < sizeOf(contraptionState.contraption[0])
-        and
-        loc.y < sizeOf(contraptionState.contraption)
-    ---
     contraptionState  update {
-        case beams at .beams -> beams filter (beam) -> inBounds(beam.location)
-        case visited at .visited -> visited filter (loc) -> inBounds(loc.location)
+        case beams at .beams -> beams filter (beam) -> 
+            inBounds(contraptionState.contraption, beam.location)
+        case visited at .visited -> visited filter (loc) -> 
+            inBounds(contraptionState.contraption, loc.location)
     }
 }
 
