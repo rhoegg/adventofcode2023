@@ -5,14 +5,14 @@
 output application/json
 
 import * from Day14
-var part1Platform = platform("sample1.txt")
+var part1Platform = platform("puzzle-input.txt")
 ---
 {
     platform: pretty(part1Platform),
     reversed: pretty(reverse(part1Platform)),
     tiltedNorth: pretty(tiltNorth(part1Platform)),
     part1: score(tiltNorth(part1Platform)),
-    part2: score(cycle(part1Platform, 5))
+    part2: score(cycle(part1Platform, 1))
     // ,
-    // part2p1: pretty(cycle(part1Platform, 1000000000))
+    // part2: pretty(cycle(part1Platform, 1000000000))
 }
