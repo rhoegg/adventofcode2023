@@ -1,8 +1,10 @@
 package main
 
 import (
+	"cmp"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -10,6 +12,7 @@ type Platform struct {
 	Dimensions Point
 	RoundRocks []*Point
 	CubeRocks  []Point
+	CycleCount int
 	pointIndex map[int]bool
 }
 
@@ -107,10 +110,17 @@ func (p *Platform) relocate(roundRock *Point, destination Point) {
 }
 func (p *Platform) move(roundRock *Point, dir Direction) {
 	next := dir.NextPoint(roundRock)
-	for !p.isFilled(next) {
-		p.relocate(roundRock, next)
-		next = dir.NextPoint(roundRock)
+	if p.isFilled(next) {
+		return
 	}
+	for !p.isFilled(next) {
+		andNext := dir.NextPoint(&next)
+		if p.isFilled(andNext) {
+			break
+		}
+		next = andNext
+	}
+	p.relocate(roundRock, next)
 }
 
 func (p *Platform) Tilt(dir Direction) {
@@ -126,4 +136,27 @@ func (p *Platform) TotalLoad() int {
 		load += p.Dimensions.Y - roundRock.Y
 	}
 	return load
+}
+
+func (p *Platform) RockPositions() string {
+	positions := ""
+	for _, r := range p.RoundRocks {
+		positions += strconv.Itoa(r.X) + "," + strconv.Itoa(r.Y) + " "
+	}
+	return positions
+}
+
+func (p *Platform) Cycle() {
+	rotation := []Direction{North, West, South, East}
+	for _, dir := range rotation {
+		p.Tilt(dir)
+	}
+	p.CycleCount += 1
+
+	slices.SortFunc(p.RoundRocks, func(p1, p2 *Point) int {
+		if n := cmp.Compare(p1.X, p2.X); n != 0 {
+			return n
+		}
+		return cmp.Compare(p1.Y, p2.Y)
+	})
 }
