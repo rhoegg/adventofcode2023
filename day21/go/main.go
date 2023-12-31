@@ -2,22 +2,21 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 )
 
 func main() {
 	garden := LoadGarden("puzzle-input.txt")
-	log.Printf("after 6 steps %d", garden.PlotsReachedFromStart(garden.Start, 6))
-	log.Printf("after 64 steps %d", garden.PlotsReachedFromStart(garden.Start, 64))
-	// Part 2
-	goal := 26501365
-	log.Printf("steps ito farthest garden at goal: %d", goal%garden.Dimensions.X)
-	// will be 65 steps from the center on horizontal and vertical extremes,
-	// which exactly matches the steps to get out of the center garden
-	// we will be 65 steps from the corner on all the diagonal edges
-	log.Printf("garden lengths covered by goal: %d", goal/garden.Dimensions.X)
+	//log.Printf("after 7 steps %d", garden.PlotsReachedFromStart(garden.Start, 7))
+	//log.Printf("after 8 steps %d", garden.PlotsReachedFromStart(garden.Start, 8))
+
+	part2(garden, 26501365)
+	//part2(garden, 1180148)
+	//part2(garden, 25)
+	//part2(garden, 42)
+	//part2(garden, 59)
+	//part2(garden, 76)
 }
 
 func LoadGarden(filename string) Garden {
