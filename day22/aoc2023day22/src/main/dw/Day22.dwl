@@ -1,8 +1,3 @@
-/**
-* This module will be shared through your library, feel free to modify it as you please.
-*
-* You can try it out with the mapping on the src/test/dw directory.
-*/
 %dw 2.0
 import * from dw::core::Arrays
 import * from dw::core::Strings
@@ -100,7 +95,7 @@ fun dropMax(b: Brick, bricks: Array<Brick>): Brick = do {
 fun applyGravity(bricks: Array<Brick>, count=0): Array<Brick> = do {
     var timedFilter = duration(
         () -> ((bricks filter (b) -> canDrop(b, bricks))
-            orderBy (brick) -> min([brick.p1.z, brick.p2.z]))
+           orderBy (brick) -> min([brick.p1.z, brick.p2.z]))
     )
     var hoverBricks = timedFilter.result
        
@@ -115,7 +110,8 @@ fun applyGravity(bricks: Array<Brick>, count=0): Array<Brick> = do {
             var updatedArray = duration(() -> (bricks -- hoverBricks) ++ dropped)
             var forLog3 = log("update array $(updatedArray.time)", sizeOf(updatedArray))
             ---
-            applyGravity(updatedArray.result, count+1)
+            // applyGravity(updatedArray.result, count+1)
+            updatedArray.result
         }
     )
     var forLog2 = log("whole thing $(wholeThing.time)", 1)
