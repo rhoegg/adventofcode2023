@@ -18,7 +18,7 @@ func main() {
 	//}
 	//log.Printf("Part 1 %d: %s", distance, strings.Join(ids, ","))
 
-	trail2 := ParseHikingTrails("puzzle-input.txt", false)
+	trail2 := ParseHikingTrails("sample1.txt", false)
 	distance2, route2 := LongestPath(trail2)
 	ids = nil
 	for _, id := range route2 {
@@ -43,7 +43,9 @@ func LongestPath(trail *PathSegment) (int, []int) {
 	// and the segment length is sunk cost
 	distances[trail.Id] = len(trail.Points) - 1 // not counting starting position
 	var finishes []*PathSegment
-	for _, seg := range TopologicalSort(trail) {
+	sorted := TopologicalSort(trail)
+	destinationId := sorted[len(sorted)-1].Id
+	for _, seg := range RemoveRabbitTrails(sorted, destinationId) {
 		if len(seg.Exits) == 0 {
 			p := seg.Points[len(seg.Points)-1]
 			log.Printf("no exits %d (%d,%d)", seg.Id, p.X, p.Y)
@@ -199,4 +201,14 @@ func SortAndTrim(trail *PathSegment) (result []*PathSegment) {
 		}
 	}
 	return result
+}
+
+func LogSegments(segments []*PathSegment) {
+	for _, n := range segments {
+		var exits []string
+		for _, e := range n.Exits {
+			exits = append(exits, strconv.Itoa(e.Id))
+		}
+		log.Printf("Seg %d -> %s", n.Id, strings.Join(exits, ","))
+	}
 }
