@@ -11,6 +11,7 @@ func main() {
 	bc := ParseBricks("puzzle-input.txt")
 	bc.ApplyGravity()
 	Part1(bc)
+	Part2(bc)
 }
 
 func ParseBricks(filename string) BrickColumn {
@@ -66,4 +67,15 @@ func Part1(bc BrickColumn) {
 		}
 	}
 	log.Printf("Part 1: %d", len(canDisintegrate))
+}
+
+func Part2(bc BrickColumn) {
+	totalDropped := 0
+	for _, b := range bc.Bricks {
+		whatIf := bc.CloneWithout(b)
+		dropped := whatIf.ApplyGravity()
+		log.Printf("Disintegrated %s, dropped %d", b, dropped)
+		totalDropped += dropped
+	}
+	log.Printf("Part 2: %d", totalDropped)
 }
