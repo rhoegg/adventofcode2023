@@ -95,6 +95,50 @@ fun part2(filename: String) = do {
     // - find intersection with stone 3
     // - check all remaining stones
     var hailstones = load(filename)
+    // transform to perspective of first hailstone
+    // now the solution must pass through position 0, 0, 0 since velocity is "zero" here
+    // origin / hailstone 2 forms a plane
+    // intersection of hailstone 3 gives a line?
     ---
-    hailstones
+    {
+        source: hailstones[0],
+        destination: hailstones[1],
+        firstPosition: relativePosition(hailstones[0], hailstones[1]),
+        firstVelocity: relativeVelocity(hailstones[0], hailstones[1]),
+        firstTrajectory: trajectory(hailstones[0], hailstones[1]),
+        secondPosition: relativePosition(hailstones[0], hailstones[2]),
+        secondVelocity: relativeVelocity(hailstones[0], hailstones[2]),
+        secondTrajectory: trajectory(hailstones[0], hailstones[2])
+    }
 }
+
+fun trajectory(h1: Hailstone, h2: Hailstone): Hailstone = do {
+    var p = relativePosition(h1, h2)
+    var v = relativeVelocity(h1, h2)
+    var t = 1
+    ---
+    {
+        position: {
+            x: h1.position.x + t*h1.velocity.x,
+            y: h1.position.y + t*h1.velocity.y,
+            z: h1.position.z + t*h1.velocity.z
+        },
+        velocity: {
+            x: p.x + v.x + t*h1.velocity.x,
+            y: p.y + v.y + t*h1.velocity.y,
+            z: p.z + v.z + t*h1.velocity.z
+        }
+    }
+}
+
+fun relativePosition(h1: Hailstone, h2: Hailstone): Point = {
+    x: h2.position.x-h1.position.x,
+    y: h2.position.y-h1.position.y,
+    z: h2.position.z-h1.position.z
+}
+fun relativeVelocity(h1: Hailstone, h2: Hailstone): Point =
+    {
+        x: h2.velocity.x-h1.velocity.x,
+        y: h2.velocity.y-h1.velocity.y,
+        z: h2.velocity.z-h1.velocity.z
+    }
