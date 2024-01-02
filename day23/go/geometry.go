@@ -1,8 +1,14 @@
 package main
 
+import "fmt"
+
 type Point struct {
 	X int16
 	Y int16
+}
+
+func (p Point) String() string {
+	return fmt.Sprintf("%d,%d", p.X, p.Y)
 }
 
 func (p Point) MoveOne(direction Direction) Point {
@@ -39,6 +45,13 @@ func (p Point) DirectionOf(p2 Point) Direction {
 		return North
 	}
 	return Undefined
+}
+
+func (p Point) Vector(dir Direction) Vector {
+	return Vector{
+		Location:  p,
+		Direction: dir,
+	}
 }
 
 type Direction int8
@@ -79,4 +92,17 @@ func (d Direction) Opposite() Direction {
 	default:
 		panic("unhandled default case")
 	}
+}
+
+type Vector struct {
+	Location  Point
+	Direction Direction
+}
+
+func (v Vector) String() string {
+	return fmt.Sprintf("%s%s", v.Direction, v.Location)
+}
+
+func (v Vector) Move(distance int16) Point {
+	return v.Location.Move(v.Direction, distance)
 }

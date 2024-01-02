@@ -1,18 +1,29 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
+	"slices"
 	"strings"
 )
 
 type PathSegment struct {
 	Id     int
 	Points []Point
-	Exits  []*PathSegment
+	Edges  []*PathSegment
 }
 
-func (s PathSegment) Contains(p Point) bool {
+func (s *PathSegment) String() string {
+	p1, p2 := s.Points[0], s.Points[len(s.Points)-1]
+	if p2.X == p1.X && p2.Y < p1.Y {
+		p1, p2 = p2, p1
+	} else if p2.X < p1.X {
+		p1, p2 = p2, p1
+	}
+	return fmt.Sprintf("%d,%d %d,%d", p1.X, p1.Y, p2.X, p2.Y)
+}
+
+func (s *PathSegment) Contains(p Point) bool {
 	for _, visited := range s.Points {
 		if visited == p {
 			return true
@@ -21,31 +32,77 @@ func (s PathSegment) Contains(p Point) bool {
 	return false
 }
 
-func (s PathSegment) Equivalent(s2 PathSegment) bool {
-	if s2.Id == s.Id {
-		return false
+func (s *PathSegment) Connects(s2 *PathSegment) bool {
+	return s.Points[0] == s2.Points[0] ||
+		s.Points[0] == s2.Points[len(s2.Points)-1] ||
+		s.Points[len(s.Points)-1] == s2.Points[0] ||
+		s.Points[len(s.Points)-1] == s2.Points[len(s2.Points)-1]
+}
+
+func (s *PathSegment) Junction(s2 *PathSegment) Point {
+	if s.Points[0] == s2.Points[0] ||
+		s.Points[0] == s2.Points[len(s2.Points)-1] {
+		return s.Points[0]
 	}
-	matched := 0
-	unmatched := 0
-	for _, p := range s.Points {
-		if s2.Contains(p) {
-			matched += 1
-		} else {
-			unmatched += 1
+	if s.Points[len(s.Points)-1] == s2.Points[0] ||
+		s.Points[len(s.Points)-1] == s2.Points[len(s2.Points)-1] {
+		return s.Points[len(s.Points)-1]
+	}
+	panic("no junction between segments")
+}
+
+func (s *PathSegment) Find(id int) *PathSegment {
+	return s.find(id, nil)
+}
+
+func (s *PathSegment) Equivalent(s2 *PathSegment) bool {
+	return len(s.Points) == len(s2.Points) &&
+		(s.Points[0] == s2.Points[0] || s.Points[0] == s2.Points[len(s2.Points)-1]) &&
+		(s.Points[len(s.Points)-1] == s2.Points[len(s2.Points)-1] || s.Points[len(s.Points)-1] == s2.Points[0])
+}
+
+func (s *PathSegment) find(id int, visited []int) *PathSegment {
+	if s.Id == id {
+		return s
+	}
+	for _, exit := range s.Edges {
+		if !slices.Contains(visited, exit.Id) {
+			found := exit.find(id, append(slices.Clone(visited), s.Id))
+			if found != nil {
+				return found
+			}
 		}
-		if matched > 1 {
+	}
+	return nil
+}
+
+func (s *PathSegment) LeadsTo(destination int) bool {
+	return s.leadsTo(destination, nil)
+}
+
+func (s *PathSegment) leadsTo(destination int, visited []int) bool {
+	if s.Id == destination {
+		return true
+	}
+	for _, next := range s.Edges {
+		if !slices.Contains(visited, next.Id) &&
+			next.leadsTo(destination, append(slices.Clone(visited), next.Id)) {
 			return true
 		}
-		if unmatched > 2 {
-			return false
-		}
 	}
-	panic("segment equivalence has a bug")
 	return false
 }
 
-func LeadsTo(destination int) bool {
-	
+func ParseHikingTrails(filename string, slippery bool) *PathSegment {
+	inputdata, err := os.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	rows := strings.Split(string(inputdata), "\n")
+	p := Point{X: 1, Y: 0}
+	//var mappedSegments []*PathSegment
+	//return FindSegment(rows, p, South, slippery, &mappedSegments)
+	return ExploreHikingTrails(rows, p, South, false)
 }
 
 func InBounds(trailMap []string, p Point) bool {
@@ -97,128 +154,77 @@ func CanMove(trailMap []string, origin Point, dir Direction, slippery bool) bool
 	return true
 }
 
-func ParseHikingTrails(filename string, slippery bool) *PathSegment {
-	inputdata, err := os.ReadFile(filename)
-	if err != nil {
-		panic(err)
-	}
-	rows := strings.Split(string(inputdata), "\n")
-	p := Point{X: 1, Y: 0}
-	var mappedSegments []*PathSegment
-	return FindSegment(rows, p, South, slippery, &mappedSegments)
-}
-
-func PossibleMoves(trailMap []string, p Point, slippery bool) []Point {
-	var options []Point
-	for _, dir := range []Direction{North, East, South, West} {
-		nextPos := p.MoveOne(dir)
-		if CanMove(trailMap, p, dir, slippery) {
-			options = append(options, nextPos)
-		}
-	}
-	return options
-}
-
-func MergingSegments(trailMap []string, p Point, segment PathSegment) bool {
-	for _, checkDir := range []Direction{North, East, South, West} {
-		checkPos := p.MoveOne(checkDir)
-		if !segment.Contains(checkPos) && InBounds(trailMap, checkPos) {
-			c := trailMap[checkPos.Y][checkPos.X]
-			if c == 'v' && checkDir == North {
-				return true
-			}
-			if c == '<' && checkDir == East {
-				return true
-			}
-			if c == '^' && checkDir == South {
-				return true
-			}
-			if c == '>' && checkDir == West {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func FindSegment(trailMap []string, start Point, dir Direction, slippery bool, mapped *[]*PathSegment) *PathSegment {
+// Rebuilding trail parser for part 2
+func ExploreHikingTrails(trailMap []string, start Point, dir Direction, slippery bool) *PathSegment {
 	id := 0
-	for _, s := range *mapped {
-		if s.Id >= id {
-			id = s.Id + 1
+	remainingToExplore := []Vector{{Location: start, Direction: dir}}
+	var found []*PathSegment
+	// vectors don't go in unless they need to be explored
+	exploredAlready := make(map[string]struct{}) // e.g. "S1,0"
+	for len(remainingToExplore) > 0 {
+		next := remainingToExplore[0]
+		remainingToExplore = remainingToExplore[1:]
+		segment := PathSegment{
+			Id:     id,
+			Points: []Point{next.Location},
 		}
-	}
-	currentSegment := &PathSegment{
-		Id:     id,
-		Points: []Point{start},
-	}
+		id += 1
 
-	for _, seg := range *mapped {
-		if seg.Points[0] == start {
-			// already mapped!
-			currentSegment = seg
-			log.Printf("found already mapped seg %d", seg.Id)
-		}
-	}
-	p := start
-	for {
-		options := PossibleMoves(trailMap, p, slippery)
-		var viableOptions []Point
-		for _, o := range options {
-			var beenThere bool
-			for _, seg := range *mapped {
-				if seg.Points[0] == o && !seg.Contains(p) {
-					beenThere = true
-					currentSegment.Exits = append(currentSegment.Exits, seg)
+		// advance until intersection
+		for {
+			// advance
+			p := next.Move(1)
+			segment.Points = append(segment.Points, p)
+			// check all directions
+			var options []Vector
+			for _, nextDir := range []Direction{North, East, South, West} {
+				if nextDir != next.Direction.Opposite() &&
+					CanMove(trailMap, p, nextDir, slippery) {
+					options = append(options, Vector{
+						Location:  p,
+						Direction: nextDir,
+					})
 				}
 			}
-			if !beenThere && !currentSegment.Contains(o) &&
-				(p != start || dir != o.DirectionOf(p)) {
-				viableOptions = append(viableOptions, o)
-			}
-		}
-
-		if p == start ||
-			len(options) == 2 &&
-				len(viableOptions) == 1 &&
-				(!slippery || !MergingSegments(trailMap, p, *currentSegment)) {
-			p = viableOptions[0]
-			currentSegment.Points = append(currentSegment.Points, p)
-		} else {
-			*mapped = append(*mapped, currentSegment)
-
-			log.Printf("Finished segment %d with %d points (%d,%d) (%d,%d)",
-				currentSegment.Id, len(currentSegment.Points),
-				currentSegment.Points[0].X, currentSegment.Points[0].Y,
-				p.X, p.Y)
-			for _, exitPoint := range viableOptions {
-				var knownSegment *PathSegment
-				for _, seg := range *mapped {
-					//if seg.Contains(exitPoint) {
-					if seg.Points[0] == exitPoint {
-						knownSegment = seg
+			if len(options) != 1 {
+				// finish the segment
+				found = append(found, &segment)
+				for _, option := range options {
+					if _, ok := exploredAlready[option.String()]; !ok {
+						exploredAlready[option.String()] = struct{}{}
+						remainingToExplore = append(remainingToExplore, option)
 					}
-					//}
 				}
-
-				if knownSegment == nil {
-					currentSegment.Exits = append(currentSegment.Exits,
-						FindSegment(trailMap, exitPoint, p.DirectionOf(exitPoint), slippery, mapped))
-				} else {
-					currentSegment.Exits = append(currentSegment.Exits,
-						knownSegment)
-				}
+				break
+			} else {
+				next = options[0]
 			}
-			if len(currentSegment.Exits) == 0 {
-				log.Printf("Perhaps we're done %d,%d", p.X, p.Y)
-			}
-			break
 		}
 	}
-
-	return currentSegment
-}
-
-func RemoveRabbitTrails(trailhead *PathSegment, destination int) {
-
+	// prune duplicates?
+	var doomed []*PathSegment
+	for _, seg := range found {
+		if !slices.Contains(doomed, seg) {
+			for _, seg2 := range found {
+				if seg.Id != seg2.Id && seg.Equivalent(seg2) {
+					doomed = append(doomed, seg2)
+				}
+			}
+		}
+	}
+	var segments []*PathSegment
+	for _, s := range found {
+		if !slices.Contains(doomed, s) {
+			segments = append(segments, s)
+		}
+	}
+	// wire up edges
+	for _, s := range segments {
+		for _, other := range segments {
+			if other.Id != s.Id && s.Connects(other) {
+				s.Edges = append(s.Edges, other)
+			}
+		}
+	}
+	return segments[0]
 }
