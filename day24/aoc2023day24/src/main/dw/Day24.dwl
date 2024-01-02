@@ -82,3 +82,19 @@ fun pairs(a: Array, acc: Array<Array> = []): Array<Array> = do {
 
 fun part1(filename: String, min: Number, max: Number) =
     countIntersectionXY(load(filename), min, max)
+
+fun part2(filename: String) = do {
+    // we're searching for trajectories that intersect a pair of moving hailstones
+    // each trajectory will have to collide with each of the pair of hailstones at the right times
+    // collision requires trajectory position to have velocity that reaches hailstone
+    // any time t there is a trajectory that would be intersecting one that would eventually intersect the other
+    // so there's a function for each hailstone that yields a "hailstone" for any given time t that will hit a particular other hailstone
+    // I need the coefficients of this function for each stone in the pair
+    // tentative plan:
+    // - compute these for stone 1 and 2,
+    // - find intersection with stone 3
+    // - check all remaining stones
+    var hailstones = load(filename)
+    ---
+    hailstones
+}
