@@ -62,7 +62,7 @@ fun countIntersectionXY(hailstones: Array<Hailstone>, min: Number, max: Number) 
                 var yInFuture = ((y - y1 > 0) == (a1 > 0)) and ((y - y3 > 0) == (a2 > 0))
                 ---
                 if (yInFuture and y >= min and y <= max) do {
-                    var forlog = log({x: x, y: y})
+                    var forlog = log("part 1", {x: x, y: y})
                     ---
                     1
                 } else 0
@@ -84,32 +84,57 @@ fun part1(filename: String, min: Number, max: Number) =
     countIntersectionXY(load(filename), min, max)
 
 fun part2(filename: String) = do {
-    // we're searching for trajectories that intersect a pair of moving hailstones
-    // each trajectory will have to collide with each of the pair of hailstones at the right times
-    // collision requires trajectory position to have velocity that reaches hailstone
-    // any time t there is a trajectory that would be intersecting one that would eventually intersect the other
-    // so there's a function for each hailstone that yields a "hailstone" for any given time t that will hit a particular other hailstone
-    // I need the coefficients of this function for each stone in the pair
-    // tentative plan:
-    // - compute these for stone 1 and 2,
-    // - find intersection with stone 3
-    // - check all remaining stones
     var hailstones = load(filename)
-    // transform to perspective of first hailstone
-    // now the solution must pass through position 0, 0, 0 since velocity is "zero" here
-    // origin / hailstone 2 forms a plane
-    // intersection of hailstone 3 gives a line?
+    // used pencil and paper -- for any hailstone line, x and y only, we have:
+    // -x*vy + y*vx = y1*vx - y1*vx1 + y*vx1 - x1*vy - x1*vy1 + x*vy1
+    // since the left side will be the same for every line, we have 4 unknowns:
+    // vx, vy, x, y
+    // so we can make a system of linear equations to determine unknowns like this:
+    // y1*vx - y1*vx1 + y*vx1 - x1*vy - x1*vy1 + x*vy1 = 
+    // y2*vx - y2*vx2 + y*vx2 - x2*vy - x2*vy2 + x*vy2
+    var fourPairs = pairs(hailstones)[0 to 3]
+    var matrix = fourPairs map (p) -> coefficients(p[0], p[1])
+    var transformed = gaussianElimination(matrix, 0)
+    var vy = transformed[3][4] / transformed[3][3]
+    var y = (transformed[2][4] - transformed[2][3] * vy) / transformed[2][2]
+    var vx = (transformed[1][4] - transformed[1][3] * vy - transformed[1][2] * y) / transformed[1][1]
+    var x = (transformed[0][4] - transformed[0][3] * vy - transformed[0][2] * y - transformed[0][1] * vx) / transformed[0][0]
+    var t1 = (hailstones[0].position.x - x) / (vx - hailstones[0].velocity.x)
+    var t2 = (hailstones[1].position.x - x) / (vx - hailstones[1].velocity.x)
+    // vz = (t1*vz1 - z1 - t2*vz2 + z*2) / (t1 - t2)
+    // WRONG -- one minus sigh!
+    // vz = (z1 - z2 + t1*vz1 - t2*vz2) / (t1 - t2)
+    var vz = (hailstones[0].position.z - hailstones[1].position.z + t1*hailstones[0].velocity.z - t2*hailstones[1].velocity.z) / (t1 - t2)
+    // z = t1(vz1 - vz) + z1
+    var z = t1 * (hailstones[0].velocity.z - vz) + hailstones[0].position.z
     ---
     {
-        source: hailstones[0],
-        destination: hailstones[1],
-        firstPosition: relativePosition(hailstones[0], hailstones[1]),
-        firstVelocity: relativeVelocity(hailstones[0], hailstones[1]),
-        firstTrajectory: trajectory(hailstones[0], hailstones[1]),
-        secondPosition: relativePosition(hailstones[0], hailstones[2]),
-        secondVelocity: relativeVelocity(hailstones[0], hailstones[2]),
-        secondTrajectory: trajectory(hailstones[0], hailstones[2])
+        vy: vy,
+        y: y,
+        vx: vx,
+        x: x,
+        vz: vz,
+        z: z,
+        t1: t1,
+        part2: x + y + z
     }
+}
+
+/**
+* Gives coefficients for a linear equation describing a line that intersects the two given hailstones
+* x(vy1-vy2) - vx(y1-y2) - y(vx1-vx2) + vy(x1-x2) = x1vy1 - y1vx1 + y2vx2 - x2vy2
+* ax         + bvx       + cy         + dvy       = e
+*/
+fun coefficients(h1: Hailstone, h2: Hailstone): Array<Number> = do {
+    var a = h1.velocity.y - h2.velocity.y
+    var b = h2.position.y - h1.position.y // inverted
+    var c = h2.velocity.x - h1.velocity.x // inverted
+    var d = h1.position.x - h2.position.x
+    var e = 
+        h1.position.x * h1.velocity.y - h1.position.y * h1.velocity.x + 
+        h2.position.y * h2.velocity.x - h2.position.x * h2.velocity.y
+    ---
+    [a, b, c, d, e]
 }
 
 fun trajectory(h1: Hailstone, h2: Hailstone): Hailstone = do {
@@ -130,6 +155,20 @@ fun trajectory(h1: Hailstone, h2: Hailstone): Hailstone = do {
         }
     }
 }
+
+fun gaussianElimination(matrix: Array<Array<Number>>, col: Number): Array<Array<Number>> = 
+    if (col == sizeOf(matrix) - 1) matrix
+    else do {
+        var pivot = matrix[col][col]
+        var onePass = matrix[0 to col] ++ (matrix[col+1 to -1] map (row, i) -> do {
+            var ratio = row[col] / pivot
+            ---
+            row map (n, j) -> if (j < col) n else n - ratio * matrix[col][j]
+        })
+        ---
+        if (col == sizeOf(matrix) - 1) onePass
+        else gaussianElimination(onePass, col + 1)
+    }
 
 fun relativePosition(h1: Hailstone, h2: Hailstone): Point = {
     x: h2.position.x-h1.position.x,
