@@ -56,6 +56,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>software.hoegg</groupId>
+            <artifactId>dataweave-pq</artifactId>
+            <version>0.0.1</version>
+            <classifier>dw-library</classifier>
+          </dependency>
+
 <!--        The modules below are only available on MuleSoft's Enterprise Edition-->
 
 <!--        <dependency>-->
@@ -146,6 +153,7 @@
             <id>mule-snapshots</id>
             <url>https://repository-master.mulesoft.org/nexus/content/repositories/snapshots</url>
         </repository>
+
     </repositories>
     <pluginRepositories>
         <pluginRepository>
