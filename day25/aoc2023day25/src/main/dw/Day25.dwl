@@ -82,7 +82,7 @@ fun findShortestPath(graph: Graph, destination: String, pq: PriorityQueue<PathId
     ---
     if (thisIdea == null) [] // there was no path
     else if (thisIdea.path[-1].to == destination) thisIdea.path // we made it
-    else if (sizeOf(visited) > 1000) log("early exit, visited too big", [])
+    else if (sizeOf(visited) > 10000) log("early exit, visited too big", [])
     else do {
         var thisStep = thisIdea.path[-1]
         var thisNode = graph.nodes firstWith (n) -> n.name == thisStep.to
